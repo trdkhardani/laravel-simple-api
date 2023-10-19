@@ -20,7 +20,7 @@ class AuthController extends Controller
         }
 
         $user = User::where('email', $request->email)->first();
-        $token = $user->createToken(Auth::user()->name, ['view', 'create'], now()->addMinutes(2)); // expiry date adjusted to sanctum.php config
+        $token = $user->createToken(Auth::user()->name, ['view', 'create'], now()->addMinutes(10)); // expiry date adjusted to sanctum.php config
 
 
         return response()->json([

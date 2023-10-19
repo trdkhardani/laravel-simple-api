@@ -13,9 +13,15 @@ return new class extends Migration
     {
         Schema::create('blogs', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('user_id');
+            $table->unsignedBigInteger('category_id');
             $table->string('title', 100)->nullable();
             $table->text('body')->nullable();
             $table->timestamps();
+
+            // Define FK
+            $table->foreign('user_id', 'user_id')->references('id')->on('users');
+            $table->foreign('category_id', 'category_id')->references('id')->on('categories');
         });
     }
 
