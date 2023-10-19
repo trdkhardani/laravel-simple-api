@@ -10,21 +10,6 @@ use Laravel\Sanctum\HasApiTokens;
 
 class AuthController extends Controller
 {
-    public function authRegister(Request $request)
-    {
-        $user = new User();
-        $user->name = $request->name;
-        $user->email = $request->email;
-        $user->password = bcrypt($request->password);
-        $user->save();
-        $token = $user->createToken('Register-API TOKEN');
-
-        return response()->json([
-            'message' => "User registered",
-            'token' => $token->plainTextToken
-        ], 200);
-    }
-
     public function authLogin(Request $request)
     {
         if(!Auth::attempt($request->only('email', 'password')))
@@ -35,27 +20,13 @@ class AuthController extends Controller
         }
 
         $user = User::where('email', $request->email)->first();
-        $token = $user->createToken(Auth::user()->name);
+        $token = $user->createToken(Auth::user()->name, ['view', 'create'], now()->addMinutes(2)); // expiry date adjusted to sanctum.php config
+
+
         return response()->json([
-            'message' => "User Logged in",
+            'message' => "Welcome, " . Auth::user()->name . "!",
             'token' => $token->plainTextToken
         ], 200);
-    }
-
-    public function dashboard(Request $request)
-    {
-        $user = Auth::user();
-        if($request->user()->currentAccessToken()){
-            return response()->json([
-                'greet' => "Welcome, " . $user->name . "!",
-                'status' => "Currently logged in"
-            ]);
-        }
-        else{
-            // return[
-            //     'warning' => "You have to log in first!"
-            // ];
-        }
     }
 
     public function authLogout(Request $request)
