@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Blog;
-use App\Models\Sanctum\PersonalAccessToken;
+use App\Http\Controllers\AuthorizeCheckController as AuthCheck;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -14,18 +14,21 @@ class BlogController extends Controller
      */
     public function index()
     {
-        // $blogs = Blog::latest()->paginate(10);
-        $blogs = Blog::first()->paginate(10);
+        $blogs = Blog::latest()->paginate(10);
+
         foreach ($blogs as $blog) {
-            // $blog = Blog::all();
-            return [
-                "status" => 1,
-                "title" => $blog->title,
-                "body" => $blog->body,
-                "category_name" => $blog->category->category_name,
-                "author" => $blog->user->name
+            $blogsData[] = [
+                'id' => $blog->id,
+                'title' => $blog->title,
+                'category' => $blog->category->category_name,
+                'author' => $blog->user->name
             ];
         }
+
+        return response()->json([
+            'status' => 1,
+            'blogs' => $blogsData,
+        ]);
     }
 
     /**
@@ -62,12 +65,13 @@ class BlogController extends Controller
      */
     public function show(Blog $blog)
     {
-        return [
+        return response()->json([
             "status" => 1,
-            "data" => $blog,
+            "title" => $blog->title,
+            "body" => $blog->body,
             "category_name" => $blog->category->category_name,
             "author" => $blog->user->name
-        ];
+        ]);
     }
 
     /**
@@ -81,29 +85,26 @@ class BlogController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, PersonalAccessToken $token)
+    public function update(Request $request, $id)
     {
-        $blogData = $request->validate([
-            'title' => 'required',
-            'body' => 'required',
-            'category_id' => 'required'
-        ]);
+        $blog = Blog::find($id);
+        $authCheck = new AuthCheck();
 
-        $blogs = Blog::all();
+        if (!$authCheck->isAuthor(Auth::user()->id, $blog->user_id)) {
 
-        foreach ($blogs as $blog) {
-            if ($blog->user->name === Auth::user()->name) {
-                $blog->update($blogData);
-                return [
-                    "status" => 1,
-                    "data" => $blog,
-                    "message" => "Blog updated successfully"
-                ];
-            } else {
-                return response()->json([
-                    "warning" => "You're not the author or the post doesn't exist"
-                ], 401);
-            }
+            $blogData = $request->validate([
+                'title' => 'required',
+                'body' => 'required',
+                'category_id' => 'required'
+            ]);
+
+            $blog->update($blogData);
+
+            return response()->json([
+                "status" => 1,
+                'message' => "Blog updated successfully",
+                "data" => $blog
+            ], 200);
         }
     }
 
@@ -112,16 +113,17 @@ class BlogController extends Controller
      */
     public function destroy($id)
     {
-        $blogs = Blog::all();
+        $blog = Blog::find($id);
+        $authCheck = new AuthCheck();
 
-        foreach ($blogs as $blog) {
-            if ($blog->user->name === Auth::user()->name) {
-                return Blog::destroy($id);
-            } else {
-                return response()->json([
-                    "warning" => "You're not the author or the post doesn't exist"
-                ], 401);
-            }
+        if (!$authCheck->isAuthor(Auth::user()->id, $blog->user_id)) {
+
+            Blog::destroy($id);
+
+            return response()->json([
+                "status" => 1,
+                'message' => "Blog deleted successfully",
+            ], 200);
         }
     }
 }
