@@ -16,11 +16,19 @@ class BlogController extends Controller
     {
         $blogs = Blog::latest()->paginate(10);
 
+        if(!$blogs->count()){
+            return response()->json([
+                'status' => 1,
+                'message' => "No blogs found"
+            ], 200);
+        }
+
         foreach ($blogs as $blog) {
             $blogsData[] = [
                 'id' => $blog->id,
                 'title' => $blog->title,
                 'category' => $blog->category->category_name,
+                'body' => $blog->body,
                 'author' => $blog->user->name
             ];
         }
@@ -90,8 +98,14 @@ class BlogController extends Controller
         $blog = Blog::find($id);
         $authCheck = new AuthCheck();
 
-        if (!$authCheck->isAuthor(Auth::user()->id, $blog->user_id)) {
+        if($blog == null){
+            return response()->json([
+                "status" => 0,
+                'message' => "Blog not found",
+            ], 404);
+        }
 
+        else if (!$authCheck->isAuthor(Auth::user()->id, $blog->user_id)) {
             $blogData = $request->validate([
                 'title' => 'required',
                 'body' => 'required',
@@ -99,13 +113,13 @@ class BlogController extends Controller
             ]);
 
             $blog->update($blogData);
-
-            return response()->json([
-                "status" => 1,
-                'message' => "Blog updated successfully",
-                "data" => $blog
-            ], 200);
         }
+
+        return response()->json([
+            "status" => 1,
+            'message' => "Blog updated successfully",
+            "data" => $blog
+        ], 200);
     }
 
     /**
@@ -116,14 +130,20 @@ class BlogController extends Controller
         $blog = Blog::find($id);
         $authCheck = new AuthCheck();
 
-        if (!$authCheck->isAuthor(Auth::user()->id, $blog->user_id)) {
-
-            Blog::destroy($id);
-
+        if($blog == null){
             return response()->json([
-                "status" => 1,
-                'message' => "Blog deleted successfully",
-            ], 200);
+                "status" => 0,
+                'message' => "Blog not found",
+            ], 404);
         }
+
+        else if (!$authCheck->isAuthor(Auth::user()->id, $blog->user_id)) {
+            Blog::destroy($id);
+        }
+
+        return response()->json([
+            "status" => 1,
+            'message' => "Blog deleted successfully",
+        ], 200);
     }
 }
