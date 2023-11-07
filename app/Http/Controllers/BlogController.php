@@ -96,7 +96,7 @@ class BlogController extends Controller
     public function update(Request $request, $id)
     {
         $blog = Blog::find($id);
-        $authCheck = new AuthCheck();
+        $authCheck = new AuthCheck(); // alias of App\Http\Controllers\AuthorizeCheckController
 
         if($blog == null){
             return response()->json([
@@ -105,7 +105,7 @@ class BlogController extends Controller
             ], 404);
         }
 
-        else if (!$authCheck->isAuthor(Auth::user()->id, $blog->user_id)) {
+        else if (!$authCheck->isNotAuthor(Auth::user()->id, $blog->user_id)) {
             $blogData = $request->validate([
                 'title' => 'required',
                 'body' => 'required',
@@ -128,7 +128,7 @@ class BlogController extends Controller
     public function destroy($id)
     {
         $blog = Blog::find($id);
-        $authCheck = new AuthCheck();
+        $authCheck = new AuthCheck(); // alias of App\Http\Controllers\AuthorizeCheckController
 
         if($blog == null){
             return response()->json([
@@ -137,7 +137,7 @@ class BlogController extends Controller
             ], 404);
         }
 
-        else if (!$authCheck->isAuthor(Auth::user()->id, $blog->user_id)) {
+        else if (!$authCheck->isNotAuthor(Auth::user()->id, $blog->user_id)) {
             Blog::destroy($id);
         }
 
